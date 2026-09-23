@@ -41,7 +41,7 @@ const steps = [
 export default function Home() {
   return (
     <main>
-      <div className="particle-layer" role="img" aria-label="Partículas da aranha se transformam em uma teia ao rolar a página">
+      <div className="particle-layer" role="img" aria-label="Partículas da aranha se transformam em uma teia e depois em uma rede neural ao rolar a página">
         <ParticleStage />
       </div>
       <HeroSection />
@@ -64,14 +64,17 @@ export default function Home() {
             <p className="section-label">02 / Frentes</p>
             <h2>Três caminhos para explorar.</h2>
           </Reveal>
-          <div className="directions-grid">
-            {directions.map((direction, index) => (
-              <Reveal as="article" className="direction-card glass-card" delay={index * 0.09} key={direction.number}>
-                <span className="item-number">{direction.number}</span>
-                <h3>{direction.title}</h3>
-                <p>{direction.description}</p>
-              </Reveal>
-            ))}
+          <div className="directions-layout">
+            <div className="neural-space" aria-hidden="true" />
+            <div className="directions-grid">
+              {directions.map((direction, index) => (
+                <Reveal as="article" className="direction-card glass-card" delay={index * 0.09} key={direction.number}>
+                  <span className="item-number">{direction.number}</span>
+                  <h3>{direction.title}</h3>
+                  <p>{direction.description}</p>
+                </Reveal>
+              ))}
+            </div>
           </div>
           <a className="section-link" href="#abordagem">Nossa abordagem</a>
         </div>

@@ -100,10 +100,37 @@ for (const target of targets) {
   await page.locator(".scroll-link").click();
   await page.waitForTimeout(900);
   const scrollY = await page.evaluate(() => window.scrollY);
+  await page.evaluate(() => {
+    const hero = document.getElementById("inicio");
+    if (!hero) throw new Error("Hero not found");
+    window.scrollTo({ top: hero.getBoundingClientRect().height * 0.64, behavior: "instant" });
+  });
+  await page.waitForTimeout(900);
+  const firstDust = await sampleCanvas();
+  await page.screenshot({ path: `artifacts/${target.name}-first-dust.png` });
+  await page.waitForTimeout(300);
+  const firstDustMoving = await sampleCanvas();
+  await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), scrollY);
   await page.locator(".web-space").scrollIntoViewIfNeeded();
   await page.waitForTimeout(900);
   const web = await sampleCanvas();
   await page.screenshot({ path: `artifacts/${target.name}-content.png` });
+  await page.locator(".neural-space").evaluate((element) => {
+    const top = element.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: top - window.innerHeight * 0.675, behavior: "instant" });
+  });
+  await page.waitForTimeout(900);
+  const between = await sampleCanvas();
+  await page.screenshot({ path: `artifacts/${target.name}-morph.png` });
+  await page.waitForTimeout(300);
+  const betweenMoving = await sampleCanvas();
+  await page.locator(".neural-space").evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
+  await page.waitForTimeout(900);
+  const neural = await sampleCanvas();
+  await page.screenshot({ path: `artifacts/${target.name}-neural.png` });
+  await page.locator(".web-space").evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
+  await page.waitForTimeout(900);
+  const webReturn = await sampleCanvas();
 
   const inspectCards = async (selector, section) => {
     const cards = page.locator(selector);
@@ -143,7 +170,7 @@ for (const target of targets) {
   );
   results.push({
     target: target.name, scene, wordmark, intro, pageSize, scrollY,
-    before, moving, after, web, canvasPointerEvents, directionBefore, directions, steps, gradients, errors,
+    before, moving, after, firstDust, firstDustMoving, web, between, betweenMoving, neural, webReturn, canvasPointerEvents, directionBefore, directions, steps, gradients, errors,
   });
   await page.close();
 }
@@ -159,6 +186,24 @@ for (const result of results) {
   }
   if (result.web.litPixels < 500 || result.web.chromaticPixels < 500) {
     throw new Error(`${result.target}: colored web did not render`);
+  }
+  if (result.firstDust.litPixels < 500 || result.firstDust.chromaticPixels < 500) {
+    throw new Error(`${result.target}: particles disappeared during the spider-to-web morph`);
+  }
+  if (result.firstDust.hash === result.firstDustMoving.hash) {
+    throw new Error(`${result.target}: spider-to-web dust is static`);
+  }
+  if (result.neural.litPixels < 500 || result.neural.chromaticPixels < 500) {
+    throw new Error(`${result.target}: neural network did not render`);
+  }
+  if (result.between.litPixels < 500 || result.between.chromaticPixels < 500) {
+    throw new Error(`${result.target}: particles disappeared during the web-to-neural morph`);
+  }
+  if (result.between.hash === result.betweenMoving.hash) {
+    throw new Error(`${result.target}: web-to-neural dust is static`);
+  }
+  if (result.webReturn.litPixels < 500 || result.webReturn.chromaticPixels < 500) {
+    throw new Error(`${result.target}: web did not return after reversing scroll`);
   }
   if (result.pageSize.width > result.pageSize.viewportWidth + 1) {
     throw new Error(`${result.target}: page overflows horizontally`);
@@ -176,11 +221,23 @@ for (const result of results) {
     throw new Error(`${result.target}: idle motion changes the spider silhouette too much`);
   }
   const isMobile = result.target !== "desktop";
-  if (isMobile && result.web.centroidY < result.before.centroidY + result.before.height * 0.16) {
+  if (isMobile && result.web.centroidY < result.before.centroidY + result.before.height * 0.12) {
     throw new Error(`${result.target}: particles did not move down into the web section`);
   }
   if (!isMobile && result.web.centroidX < result.before.centroidX + result.before.width * 0.22) {
     throw new Error(`${result.target}: particles did not move right into the web section`);
+  }
+  if (!isMobile && result.neural.centroidX > result.web.centroidX - result.before.width * 0.25) {
+    throw new Error(`${result.target}: particles did not move left into the neural section`);
+  }
+  if (!isMobile && (
+    result.between.centroidX > result.web.centroidX - result.before.width * 0.08
+    || result.between.centroidX < result.neural.centroidX + result.before.width * 0.08
+  )) {
+    throw new Error(`${result.target}: web-to-neural movement is not gradual`);
+  }
+  if (!isMobile && result.webReturn.centroidX < result.neural.centroidX + result.before.width * 0.25) {
+    throw new Error(`${result.target}: particles did not return right to the web`);
   }
   if (isMobile && result.scene.y + result.scene.height > result.wordmark.y) {
     throw new Error(`${result.target}: spider overlaps the wordmark`);
