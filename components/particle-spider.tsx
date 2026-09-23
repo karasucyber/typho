@@ -72,8 +72,8 @@ const fragmentShader = `
     float distanceToCenter = length(gl_PointCoord - vec2(0.5));
     float alpha = 1.0 - smoothstep(0.28, 0.5, distanceToCenter);
     if (alpha < 0.01) discard;
-    vec3 color = mix(vAccent, vec3(1.0), 0.1) * mix(0.92, 1.0, vLuminance);
-    color = mix(color, vec3(1.0), vInfluence * 0.26);
+    vec3 color = vAccent * mix(0.92, 1.0, vLuminance);
+    color *= 1.0 + vInfluence * 0.12;
     gl_FragColor = vec4(color, alpha * vTwinkle * uOpacity);
   }
 `;
@@ -103,9 +103,9 @@ function createSpiderParticles(imageData: ImageData): ParticleBuffers {
   const sizes: number[] = [];
   const phases: number[] = [];
   const luminances: number[] = [];
-  const sapphire = new THREE.Color(59 / 255, 130 / 255, 246 / 255);
-  const violet = new THREE.Color(139 / 255, 92 / 255, 246 / 255);
-  const pink = new THREE.Color(236 / 255, 72 / 255, 153 / 255);
+  const sapphire = new THREE.Color("#3B82F6");
+  const violet = new THREE.Color("#8B5CF6");
+  const pink = new THREE.Color("#EC4899");
   const accent = new THREE.Color();
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
@@ -216,7 +216,7 @@ export function ParticleSpider() {
     uPointSize: { value: pointSize },
     uHover: { value: 0 },
     uMorph: { value: 0 },
-    uOpacity: { value: 1 },
+    uOpacity: { value: 0.6 },
     uPointer: { value: new THREE.Vector2(100, 100) },
   }), [gl, pointSize]);
 
@@ -323,7 +323,7 @@ export function ParticleSpider() {
     materialUniforms.uMorph.value = morph;
     materialUniforms.uOpacity.value = THREE.MathUtils.damp(
       materialUniforms.uOpacity.value,
-      scrollTargets.current.opacity,
+      scrollTargets.current.opacity * materialRef.current.opacity,
       8,
       delta,
     );
@@ -376,7 +376,9 @@ export function ParticleSpider() {
         </bufferGeometry>
         <shaderMaterial
           ref={materialRef}
-          transparent
+          toneMapped={false}
+          transparent={true}
+          opacity={0.6}
           depthWrite={false}
           depthTest={false}
           uniforms={uniforms}

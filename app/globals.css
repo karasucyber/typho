@@ -21,7 +21,11 @@ html {
 body {
   margin: 0;
   overflow-x: hidden;
-  background: var(--background);
+  background:
+    radial-gradient(ellipse 78% 95% at -18% 25%, rgba(52, 26, 77, 0.18), transparent 72%),
+    radial-gradient(ellipse 70% 90% at 118% 76%, rgba(65, 28, 91, 0.15), transparent 70%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -37,6 +41,7 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .identity-page {
@@ -46,7 +51,7 @@ body {
   width: 100%;
   min-height: 88svh;
   overflow: hidden;
-  background-color: var(--background);
+  background-color: rgba(8, 10, 16, 0.38);
   background-image:
     linear-gradient(rgba(142, 154, 190, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(142, 154, 190, 0.045) 1px, transparent 1px);
@@ -80,6 +85,14 @@ body {
   width: 100%;
   height: auto;
   overflow: visible;
+}
+
+.wordmark-thread {
+  filter: drop-shadow(0 0 3px rgba(139, 92, 246, 0.7));
+}
+
+.wordmark-flash {
+  filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.8));
 }
 
 .brand-lockup p {
@@ -132,6 +145,10 @@ a:focus-visible {
 .content-section h2 {
   max-width: 820px;
   margin: 0;
+  background: linear-gradient(105deg, #89b7ff 0%, #a88cff 68%, #c2a1f5 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
   font-size: 52px;
   font-weight: 600;
   line-height: 1.08;
@@ -140,6 +157,11 @@ a:focus-visible {
 
 .section-label {
   margin: 0 0 30px;
+  width: fit-content;
+  background: linear-gradient(100deg, #80adff, #a78bfa);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.4;
@@ -160,12 +182,8 @@ a:focus-visible {
 .content-section--intro {
   position: relative;
   border-top: 1px solid #1d3155;
-  background: #0e1015;
+  background: rgba(14, 16, 21, 0.84);
   color: #f4f7ff;
-}
-
-.content-section--intro .section-label {
-  color: #8fb6ff;
 }
 
 .intro-grid {
@@ -179,7 +197,7 @@ a:focus-visible {
 }
 
 .intro-copy-block {
-  background: #0e1015;
+  background: transparent;
 }
 
 .intro-copy-block p:not(.section-label) {
@@ -196,30 +214,36 @@ a:focus-visible {
 
 .content-section--directions {
   border-top: 1px solid #422b54;
-  background: #130f16;
+  background: rgba(17, 15, 23, 0.82);
   color: #f0f1f4;
-}
-
-.content-section--directions .section-label {
-  color: #c4a6ef;
 }
 
 .directions-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
   margin: 72px 0 38px;
-  border-top: 1px solid #37303d;
-  border-bottom: 1px solid #37303d;
 }
 
-.directions-grid article {
+.glass-card {
+  border: 1px solid rgba(151, 157, 190, 0.19);
+  border-radius: 6px;
+  background: linear-gradient(155deg, rgba(38, 42, 57, 0.58), rgba(25, 22, 36, 0.54));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: border-color 260ms ease, box-shadow 260ms ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(156, 142, 244, 0.56);
+  box-shadow: 0 0 25px rgba(93, 70, 169, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.direction-card {
   min-width: 0;
-  padding: 32px 30px 42px 0;
-}
-
-.directions-grid article + article {
-  padding-left: 30px;
-  border-left: 1px solid #37303d;
+  min-height: 234px;
+  padding: 30px;
 }
 
 .item-number {
@@ -253,12 +277,8 @@ a:focus-visible {
 
 .content-section--approach {
   border-top: 1px solid #4b2740;
-  background: #0e0d12;
+  background: rgba(12, 11, 18, 0.84);
   color: #f4f7ff;
-}
-
-.content-section--approach .section-label {
-  color: #ef9dc7;
 }
 
 .approach-grid {
@@ -268,15 +288,15 @@ a:focus-visible {
 }
 
 .steps-list {
-  border-top: 1px solid #34313d;
+  display: grid;
+  gap: 14px;
 }
 
 .step-row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 18px;
-  padding: 26px 0 28px;
-  border-bottom: 1px solid #34313d;
+  padding: 25px 26px 27px;
 }
 
 .step-row .item-number {
@@ -404,16 +424,13 @@ a:focus-visible {
 
   .directions-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
     margin-top: 46px;
-    border-bottom: 0;
   }
 
-  .directions-grid article,
-  .directions-grid article + article {
-    padding: 26px 0 30px;
-    border-right: 0;
-    border-bottom: 1px solid #37303d;
-    border-left: 0;
+  .direction-card {
+    min-height: 0;
+    padding: 26px;
   }
 
   .directions-grid h3 {
@@ -429,5 +446,24 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .glass-card {
+    transition: none;
+  }
+
+  .typho-letter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .wordmark-thread,
+  .wordmark-flash {
+    display: none;
   }
 }

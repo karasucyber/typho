@@ -30,6 +30,9 @@ for (const target of targets) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.waitForSelector("canvas");
   await page.waitForTimeout(800);
+  const canvasPointerEvents = await page.locator(".particle-layer > div").evaluate(
+    (element) => getComputedStyle(element).pointerEvents,
+  );
   const scene = await page.locator(".scene").boundingBox();
   const wordmark = await page.locator(".brand-lockup").boundingBox();
   const intro = await page.locator("#possibilidades").boundingBox();
@@ -81,6 +84,9 @@ for (const target of targets) {
   });
 
   const before = await sampleCanvas();
+  const directionBefore = await page.locator(".direction-card").first().evaluate(
+    (card) => Number(getComputedStyle(card).opacity),
+  );
   await page.screenshot({ path: `artifacts/${target.name}.png` });
   await page.screenshot({ path: `artifacts/${target.name}-page.png`, fullPage: true });
   await page.waitForTimeout(800);
@@ -98,7 +104,47 @@ for (const target of targets) {
   await page.waitForTimeout(900);
   const web = await sampleCanvas();
   await page.screenshot({ path: `artifacts/${target.name}-content.png` });
-  results.push({ target: target.name, scene, wordmark, intro, pageSize, scrollY, before, moving, after, web, errors });
+
+  const inspectCards = async (selector, section) => {
+    const cards = page.locator(selector);
+    const count = await cards.count();
+    if (count !== 3) throw new Error(`${target.name}: ${section} cards are missing`);
+    const styles = [];
+    for (let index = 0; index < count; index += 1) {
+      const card = cards.nth(index);
+      await card.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1200);
+      styles.push(await card.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          opacity: Number(style.opacity),
+          borderWidth: style.borderTopWidth,
+          backdropFilter: style.backdropFilter,
+        };
+      }));
+      if (index === 0) {
+        await page.screenshot({ path: `artifacts/${target.name}-${section}.png` });
+        if (section === "frentes" && target.name === "desktop") {
+          const beforeHover = await card.evaluate((element) => getComputedStyle(element).borderTopColor);
+          await card.hover();
+          await page.waitForTimeout(350);
+          const afterHover = await card.evaluate((element) => getComputedStyle(element).borderTopColor);
+          if (beforeHover === afterHover) throw new Error("desktop: glass card hover did not respond");
+        }
+      }
+    }
+    return styles;
+  };
+
+  const directions = await inspectCards(".direction-card", "frentes");
+  const steps = await inspectCards(".step-row", "abordagem");
+  const gradients = await page.locator(".content-section h2").evaluateAll(
+    (headings) => headings.map((heading) => getComputedStyle(heading).backgroundClip),
+  );
+  results.push({
+    target: target.name, scene, wordmark, intro, pageSize, scrollY,
+    before, moving, after, web, canvasPointerEvents, directionBefore, directions, steps, gradients, errors,
+  });
   await page.close();
 }
 
@@ -108,8 +154,8 @@ for (const result of results) {
   if (result.before.litPixels < 500 || result.after.litPixels < 500) {
     throw new Error(`${result.target}: canvas appears blank`);
   }
-  if (result.before.chromaticPixels < 500) {
-    throw new Error(`${result.target}: logo particles are not colored`);
+  if (result.before.chromaticPixels < result.before.litPixels * 0.8) {
+    throw new Error(`${result.target}: logo particles are washed out`);
   }
   if (result.web.litPixels < 500 || result.web.chromaticPixels < 500) {
     throw new Error(`${result.target}: colored web did not render`);
@@ -144,6 +190,20 @@ for (const result of results) {
   }
   if (result.before.hash === result.after.hash) {
     throw new Error(`${result.target}: particles did not react to the pointer`);
+  }
+  if (result.canvasPointerEvents !== "none") {
+    throw new Error(`${result.target}: particle canvas blocks content interactions`);
+  }
+  if (result.directionBefore > 0.05) {
+    throw new Error(`${result.target}: card reveal started before it entered the viewport`);
+  }
+  if (result.gradients.length !== 3 || result.gradients.some((clip) => clip !== "text")) {
+    throw new Error(`${result.target}: section title gradients are missing`);
+  }
+  for (const card of [...result.directions, ...result.steps]) {
+    if (card.opacity < 0.95 || card.borderWidth !== "1px" || card.backdropFilter === "none") {
+      throw new Error(`${result.target}: glass card or scroll reveal is missing: ${JSON.stringify(card)}`);
+    }
   }
   if (result.errors.length > 0) {
     throw new Error(`${result.target}: ${result.errors.join(" | ")}`);
